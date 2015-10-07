@@ -21,27 +21,33 @@ async function TryResolveAllPromiseSerially (arrayOfPromise, resolve, reject) {
   return result
 }
 
-function TryResolveAllPromiseParallelly (arrayOfPromise, resolve, reject, done) {
-  let counter = 0
-  let result = Array(arrayOfPromise.length)
-  arrayOfPromise.forEach((promise, index) => {
-    (i) => {
-      promise.then((value) => {
-        counter++
-        result[i] = resolve(value)
-        if (counter === arrayOfPromise.length) done(result)
-      }, (e) => {
-        counter++
-        result[i] = reject(e)
-        if (counter === arrayOfPromise.length) done(result)
-      })
-    }(index)
+function TryResolveAllPromiseParallelly (arrayOfPromise, onResolve, onReject) {
+  return new Promise((resolve, reject) => {
+    let counter = 0
+    let result = Array(arrayOfPromise.length)
+    arrayOfPromise.forEach((promise, index) => {
+      (i) => {
+        promise.then((value) => {
+          counter++
+          result[i] = onResolve(value)
+          if (counter === arrayOfPromise.length) resolve(result)
+        }, (e) => {
+          counter++
+          result[i] = onReject(e)
+          if (counter === arrayOfPromise.length) resolve(result)
+        })
+      }(index)
+    })
   })
 }
 
 async () => {
-  // let result = await Promise.all([promise1, promise2, promise3])
-  // console.log(result)
+  try {
+    await Promise.all([promise1(1000), promise2, promise3])
+  } catch (e) {
+    console.log('gg', e)
+  }
+
   let resolve = (value) => {
     console.log('resolve', value)
     return value
@@ -51,12 +57,12 @@ async () => {
     return new Error(value)
   }
 
-  let done = (result) => {
-    console.log('@@@@ result = ', result)
-  }
+  let promiseArray = [promise1(1000), promise2, promise3]
 
-  let result = await TryResolveAllPromiseSerially([promise1(1000), promise2, promise3], resolve, reject)
+  let result = await TryResolveAllPromiseSerially(promiseArray, resolve, reject)
   console.log(result)
 
-  TryResolveAllPromiseParallelly([promise1(1000), promise2, promise3], resolve, reject, done)
+  let promiseArray2 = [promise1(1000), promise2, promise3]
+  let result2 = await TryResolveAllPromiseParallelly(promiseArray2, resolve, reject)
+  console.log(result2)
 }()
